@@ -44,9 +44,7 @@ class LocationUpdater:
             terminals = self.db.query(Terminal).all()
 
             for terminal in terminals:
-                dashboard_data = await dashboard_service.get_terminal_dashboard(
-                    terminal.id
-                )
+                dashboard_data = await dashboard_service.get_terminal_dashboard()
                 await websocket_manager.broadcast_to_terminal(
                     dashboard_data,
                     terminal.id,

@@ -7,9 +7,9 @@ from app.dependencies import get_db, require_admin
 from app.schemas.terminal import TerminalCreate, TerminalUpdate, TerminalResponse
 from app.models.terminal import Terminal
 
-terminals_router = APIRouter(prefix="/terminals", tags=["Terminals"])
+terminals_router = APIRouter()
 
-routes_router = APIRouter(prefix="/routes", tags=["Routes"])
+routes_router = APIRouter()
 
 @terminals_router.get("/", response_model=List[TerminalResponse])
 async def get_terminals(

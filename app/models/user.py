@@ -1,7 +1,7 @@
 import enum
 from app.database import Base
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, values
 from sqlalchemy.dialects.postgresql import ENUM
 from sqlalchemy.orm import relationship
 
@@ -39,8 +39,13 @@ class User(Base):
     is_admin = Column(Boolean, default=False, nullable=False)
     
     # Timestamps
-    created_at = Column(DateTime, default=datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc), 
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False
+    )
     last_login = Column(DateTime, nullable=True)
     
     # Security
@@ -50,7 +55,8 @@ class User(Base):
     
     # Relationships
     # If user is a driver, link to driver profile
-    driver = relationship("Driver", back_populates="user", uselist=False)
+    etas = relationship("Eta", back_populates="user")
+    drivers = relationship("Driver", back_populates="user", uselist=False)
     
     @property
     def full_name(self) -> str:
@@ -90,12 +96,10 @@ class User(Base):
             "first_name": self.first_name,
             "last_name": self.last_name,
             "full_name": self.full_name,
-            "role": self.role.value,
+            "role": self.role.values,
             "is_active": self.is_active,
             "is_verified": self.is_verified,
             "is_admin": self.is_admin,
-            "created_at": self.created_at.isoformat() if self.created_at is True else None,
-            "last_login": self.last_login.isoformat() if self.last_login is True else None
         }
 # Create new user
 # user = User(

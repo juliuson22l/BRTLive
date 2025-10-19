@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -18,6 +18,14 @@ class UserBase(BaseModel):
     last_name: str = Field(..., min_length=1, max_length=100)
     phone: Optional[str] = Field(None, max_length=20)
     role: UserRole = Field(default=UserRole.VIEWER, alias="user_role")
+
+    @field_validator('phone')
+    def validate_phone(cls, v):
+        # Remove any non-digit characters
+        digits = ''.join(filter(str.isdigit, v))
+        if len(digits) < 10:
+            raise ValueError('Phone number must have at least 10 digits')
+        return v
 
 # Create user (signup)
 class UserCreate(UserBase):

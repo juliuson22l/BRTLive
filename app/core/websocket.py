@@ -61,7 +61,7 @@ class WebSocketManager:
         
         tasks = []
         for conn in self.active_connections.copy():
-            if hasattr(conn, 'terminal_id') and conn.terminal_id == terminal_id:
+            if getattr(conn, 'terminal_id', None) == terminal_id:
                 tasks.append(self._safe_send(conn, message))
         
         if tasks:

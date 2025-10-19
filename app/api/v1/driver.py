@@ -9,7 +9,7 @@ from app.models.driver import Driver
 from app.models.bus import Bus
 from app.models.user import User
 
-router = APIRouter(prefix="/drivers", tags=["Drivers"])
+router = APIRouter()
 
 @router.get("/", response_model=List[DriverResponse])
 async def get_drivers(
@@ -50,13 +50,13 @@ async def create_driver(
     
     # Check license exists
     result = await db.execute(
-        select(Driver).filter(Driver.license_number == driver_data.license_number)
+        select(Driver).filter(Driver.license_id == driver_data.license_number)
     )
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="License number already exists")
     
     # Create driver
-    new_driver = Driver(**driver_data.dict())
+    new_driver = Driver(**driver_data.model_dump())
     db.add(new_driver)
     await db.commit()
     await db.refresh(new_driver)
@@ -78,7 +78,7 @@ async def update_driver(
         raise HTTPException(status_code=404, detail="Driver not found")
     
     # Update fields
-    for field, value in driver_data.dict(exclude_unset=True).items():
+    for field, value in driver_data.model_dump(exclude_unset=True).items():
         setattr(driver, field, value)
     
     await db.commit()

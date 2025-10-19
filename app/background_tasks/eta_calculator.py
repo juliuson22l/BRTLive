@@ -66,14 +66,14 @@ class ETACalculator:
                     return
                 
                 # 2. Calculate ETA for each bus
-                eta_service = ETAService(db)
+                eta_service = ETAService()
                 total_predictions = 0
                 successful_buses = 0
                 
                 for bus in buses:
                     try:
                         # Calculate predictions
-                        predictions = await eta_service.calculate_eta_for_bus(bus.id)
+                        predictions = await eta_service.calculate_eta(bus.id)
                         
                         if predictions:
                             # Save predictions

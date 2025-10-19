@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.templating import Jinja2Templates
 
 from app.database import init_db, close_db
 from app.core.Logging import setup_logging
@@ -60,11 +61,7 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {
-        "message": "BRT Live API",
-        "version": "1.0.0",
-        "status": "running"
-    }
+    return "Welcome to the BRTLive app, have a wonderful experience"
 
 # Health check
 @app.get("/health")

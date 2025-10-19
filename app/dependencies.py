@@ -2,7 +2,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import Optional
+from typing import Optional, AsyncGenerator
 import redis.asyncio as redis
 from datetime import datetime
 
@@ -15,7 +15,7 @@ from app.models.user import User
 # Security
 security = HTTPBearer()
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Get async database session"""
     session = async_session()
     try:

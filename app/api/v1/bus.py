@@ -2,13 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional
+from datetime import datetime, timedelta, timezone
 
 from app.dependencies import get_db, require_admin, get_current_active_user
 from app.schemas.bus import BusCreate, BusUpdate, BusResponse
 from app.models.bus import Bus
 from app.models.user import User
+from app.models.route import Route
+from app.models.tracking import BusTracking as Tracking
+from app.utils.helpers import calculate_eta_minutes
 
-router = APIRouter(prefix="/buses", tags=["Buses"])
+router = APIRouter()
 
 @router.get("/", response_model=List[BusResponse])
 async def get_buses(
@@ -137,7 +141,57 @@ async def deactivate_bus(
         raise HTTPException(status_code=404, detail="Bus not found")
 
     assert bus is not None
-    bus.is_active is False
     await db.commit()
     
     return {"message": "Bus deactivated"}
+@router.get("/terminal-status/{terminal_name}")
+async def get_terminal_status(
+    terminal_name: str,
+    db: AsyncSession = Depends(get_db)
+):
+    """Return buses en route to a terminal and their ETA."""
+    
+    # Step 1: Get all routes for that terminal
+    route_query = select(Route).filter(Route.destination_terminal == terminal_name)
+    routes_result = await db.execute(route_query)
+    routes = routes_result.scalars().all()
+    
+    if not routes:
+        raise HTTPException(status_code=404, detail="Terminal not found")
+
+    # Step 2: Collect bus IDs for these routes
+    route_ids = [r.id for r in routes]
+    bus_query = select(Bus).filter(Bus.route_id.in_(route_ids))
+    buses_result = await db.execute(bus_query)
+    buses = buses_result.scalars().all()
+
+    if not buses:
+        return {"message": "No bus available on this route"}
+
+    # Step 3: Check active tracking data (within last 10 mins)
+    time_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
+    active_query = (
+        select(Tracking)
+        .filter(Tracking.bus_id.in_([b.id for b in buses]))
+        .filter(Tracking.gps_timestamp >= time_ago)
+        .order_by(Tracking.gps_timestamp.desc())
+    )
+    tracking_result = await db.execute(active_query)
+    active_tracks = tracking_result.scalars().all()
+
+    if not active_tracks:
+        return {"message": "No bus available on this route"}
+
+    # Step 4: Calculate ETA for each bus (using your existing logic)
+    response_data = []
+    for track in active_tracks:
+        eta = await calculate_eta_minutes(track.latitude, track.longitude, terminal_name)
+        response_data.append({
+            "bus_id": track.bus_id,
+            "latitude": track.latitude,
+            "longitude": track.longitude,
+            "eta": eta,
+            "timestamp": track.gps_timestamp.isoformat()
+        })
+
+    return response_data

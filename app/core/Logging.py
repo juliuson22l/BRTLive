@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 import sys
 from pathlib import Path
 from datetime import datetime
@@ -119,7 +120,7 @@ class AsyncLogContext:
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        duration = asyncio.get_event_loop().time() - self.start_time
+        duration = asyncio.get_event_loop().time() - datetime.now(timezone.utc)
         
         if exc_type is None:
             self.logger.info(f"✅ Completed: {self.operation} ({duration:.2f}s)")

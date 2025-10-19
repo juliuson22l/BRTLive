@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from pydantic import BaseModel, Field
 from typing import Optional
 
 # Base schema (shared fields)
@@ -8,6 +7,7 @@ class TerminalBase(BaseModel):
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     address: Optional[str] = Field(None, max_length=255)
+    capacity: int = 20
 
 # Create terminal
 class TerminalCreate(TerminalBase):
@@ -22,8 +22,11 @@ class TerminalUpdate(BaseModel):
 
 # Response (what API returns)
 class TerminalResponse(TerminalBase):
-    id: int
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    id: str
     
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
+
+class TerminalDashboard(TerminalResponse):
+    bus_count: int
+    expected_wait_time: int  # in minutes

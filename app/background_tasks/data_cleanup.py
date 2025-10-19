@@ -86,7 +86,7 @@ class DataCleanupService:
                         .limit(batch_size)
                     )
 
-                    deleted_count = result.rowcount
+                    deleted_count = result.rowcount()
                     if deleted_count == 0:
                         break
                     

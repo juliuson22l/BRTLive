@@ -10,7 +10,7 @@ from app.models.bus import Bus
 from app.models.user import User
 from app.core.websocket import manager
 
-router = APIRouter(prefix="/tracking", tags=["Tracking"])
+router = APIRouter()
 
 @router.post("/update-location")
 async def update_location(

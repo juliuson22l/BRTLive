@@ -7,7 +7,7 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse, Token
 from app.models.user import User
 from app.core.security import hash_password, verify_password, create_access_token
 
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter()
 
 @router.post("/signup", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def signup(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
@@ -30,10 +30,13 @@ async def signup(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     new_user = User(
         email=user_data.email,
         phone=user_data.phone,
-        password_hash= hash_password(user_data.password),
+        password_hash=await hash_password(user_data.password),
         first_name=user_data.first_name,
         last_name=user_data.last_name,
-        role=user_data.role
+        role=user_data.role,
+        is_active=True,
+        is_verified=False,
+        is_admin=False
     )
     
     db.add(new_user)
@@ -66,7 +69,7 @@ async def login(credentials: UserLogin, db: AsyncSession = Depends(get_db)):
     await db.commit()
     
     # Create token
-    token = create_access_token(user.id)
+    token = create_access_token(user.id.__get__(user, User))
     return {
         "access_token": token,
         "token_type": "bearer",

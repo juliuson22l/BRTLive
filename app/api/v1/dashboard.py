@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, distinct
 from datetime import datetime, timedelta, timezone
+from typing import List
 
 from app.dependencies import get_db, get_current_active_user
 from app.models.bus import Bus
@@ -10,8 +11,10 @@ from app.models.route import Route
 from app.models.terminal import Terminal
 from app.models.tracking import BusTracking as Tracking
 from app.models.user import User
+from app.schemas.terminal import TerminalDashboard
+from app.services.dashboard_service import DashboardService
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+router = APIRouter()
 
 @router.get("/stats")
 async def get_stats(
@@ -57,6 +60,12 @@ async def get_stats(
         "total_terminals": total_terminals or 0
     }
 
+@router.get("/terminals", response_model=List[TerminalDashboard])
+async def get_terminal_dashboard(db: AsyncSession = Depends(get_db)):
+    """Get dashboard with bus count and wait times for all terminals"""
+    service = DashboardService(db)
+    return await service.get_terminal_dashboard()
+
 @router.get("/map")
 async def get_map_data(
     db: AsyncSession = Depends(get_db),
@@ -88,7 +97,7 @@ async def get_map_data(
                 "plate_number": bus.plate_number,
                 "latitude": location.latitude,
                 "longitude": location.longitude,
-                "speed": location.speed
+                "speed": location.speed_km
             })
     
     # Get all terminals
