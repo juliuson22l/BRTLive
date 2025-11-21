@@ -1,45 +1,37 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional
-from datetime import datetime, timedelta, timezone
+from typing import List
 
-from app.dependencies import get_db, require_admin, get_current_active_user
-from app.schemas.bus import BusCreate, BusUpdate, BusResponse
+from app.database import get_db
 from app.models.bus import Bus
+from app.schemas.bus import BusCreate, BusUpdate, BusResponse
+from app.dependencies import get_current_admin_user, get_current_active_user, get_pagination_params
 from app.models.user import User
-from app.models.route import Route
-from app.models.tracking import BusTracking as Tracking
-from app.utils.helpers import calculate_eta_minutes
 
 router = APIRouter()
 
 @router.get("/", response_model=List[BusResponse])
-async def get_buses(
-    skip: int = 0,
-    limit: int = 100,
-    is_active: Optional[bool] = None,
+async def get_all_buses(
+    pagination: dict = Depends(get_pagination_params),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get all buses"""
-    query = select(Bus)
-    
-    if is_active is not None:
-        query = query.filter(Bus.is_active == is_active)
-
-    query = query.offset(skip).limit(limit)
+    """Get all buses with pagination"""
+    query = select(Bus).offset(pagination["skip"]).limit(pagination["limit"])
     result = await db.execute(query)
-    return result.scalars().all()
+    buses = result.scalars().all()
+    return buses
 
 @router.get("/{bus_id}", response_model=BusResponse)
-async def get_bus(
+async def get_bus_by_id(
     bus_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get single bus"""
-    result = await db.execute(select(Bus).filter(Bus.id == bus_id))
+    """Get a specific bus by ID"""
+    query = select(Bus).where(Bus.id == bus_id)
+    result = await db.execute(query)
     bus = result.scalar_one_or_none()
     
     if not bus:
@@ -51,43 +43,56 @@ async def get_bus(
 async def create_bus(
     bus_data: BusCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Create new bus"""
-    
-    # Check plate number exists
-    result = await db.execute(
-        select(Bus).filter(Bus.plate_number == bus_data.plate_number)
-    )
+    """Create a new bus (Admin only)"""
+    # Check if plate number already exists
+    query = select(Bus).where(Bus.plate_number == bus_data.plate_number)
+    result = await db.execute(query)
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="Plate number already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bus with this plate number already exists"
+        )
     
-    # Create bus
-    new_bus = Bus(**bus_data.model_dump())
-    db.add(new_bus)
+    bus = Bus(
+        plate_number=bus_data.plate_number,
+        capacity=bus_data.capacity
+    )
+    
+    db.add(bus)
     await db.commit()
-    await db.refresh(new_bus)
+    await db.refresh(bus)
     
-    return new_bus
+    return bus
 
 @router.put("/{bus_id}", response_model=BusResponse)
 async def update_bus(
     bus_id: int,
     bus_data: BusUpdate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Update bus"""
-    result = await db.execute(select(Bus).filter(Bus.id == bus_id))
+    """Update a bus (Admin only)"""
+    query = select(Bus).where(Bus.id == bus_id)
+    result = await db.execute(query)
     bus = result.scalar_one_or_none()
     
     if not bus:
         raise HTTPException(status_code=404, detail="Bus not found")
     
-    # Update fields
-    for field, value in bus_data.model_dump(exclude_unset=True).items():
-        setattr(bus, field, value)
-    
+    # Update only provided fields
+    if bus_data.latitude is not None:
+        setattr(bus, "latitude", bus_data.latitude)
+    if bus_data.longitude is not None:
+        setattr(bus, "longitude", bus_data.longitude)
+    if bus_data.speed is not None:
+        setattr(bus, "speed", bus_data.speed)
+    if bus_data.current_terminal_id is not None:
+        setattr(bus, "current_terminal_id", bus_data.current_terminal_id)
+    if bus_data.is_active is not None:
+        setattr(bus, "is_active", bus_data.is_active)
+
     await db.commit()
     await db.refresh(bus)
     
@@ -97,10 +102,11 @@ async def update_bus(
 async def delete_bus(
     bus_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Delete bus"""
-    result = await db.execute(select(Bus).filter(Bus.id == bus_id))
+    """Delete a bus (Admin only)"""
+    query = select(Bus).where(Bus.id == bus_id)
+    result = await db.execute(query)
     bus = result.scalar_one_or_none()
     
     if not bus:
@@ -108,90 +114,79 @@ async def delete_bus(
     
     await db.delete(bus)
     await db.commit()
+    
+    return None
 
-@router.patch("/{bus_id}/activate")
+@router.patch("/{bus_id}/activate", response_model=BusResponse)
 async def activate_bus(
     bus_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Turn bus on"""
-    result = await db.execute(select(Bus).filter(Bus.id == bus_id))
+    """Activate a bus (Admin only)"""
+    query = select(Bus).where(Bus.id == bus_id)
+    result = await db.execute(query)
     bus = result.scalar_one_or_none()
     
     if not bus:
         raise HTTPException(status_code=404, detail="Bus not found")
-
-    bus.is_active
-    await db.commit()
     
-    return {"message": "Bus activated"}
+    bus.is_active = True
+    await db.commit()
+    await db.refresh(bus)
+    
+    return bus
 
-@router.patch("/{bus_id}/deactivate")
+@router.patch("/{bus_id}/deactivate", response_model=BusResponse)
 async def deactivate_bus(
     bus_id: int,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Turn bus off"""
-    result = await db.execute(select(Bus).filter(Bus.id == bus_id))
+    """Deactivate a bus (Admin only)"""
+    query = select(Bus).where(Bus.id == bus_id)
+    result = await db.execute(query)
     bus = result.scalar_one_or_none()
     
     if not bus:
         raise HTTPException(status_code=404, detail="Bus not found")
 
-    assert bus is not None
+    bus.is_active = False
     await db.commit()
+    await db.refresh(bus)
     
-    return {"message": "Bus deactivated"}
+    return bus
+
 @router.get("/terminal-status/{terminal_name}")
 async def get_terminal_status(
     terminal_name: str,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
-    """Return buses en route to a terminal and their ETA."""
+    """Get buses at a specific terminal"""
+    from app.models.terminal import Terminal
+    from sqlalchemy import func
     
-    # Step 1: Get all routes for that terminal
-    route_query = select(Route).filter(Route.destination_terminal == terminal_name)
-    routes_result = await db.execute(route_query)
-    routes = routes_result.scalars().all()
+    # Find terminal by name
+    terminal_query = select(Terminal).where(Terminal.name.ilike(f"%{terminal_name}%"))
+    terminal_result = await db.execute(terminal_query)
+    terminal = terminal_result.scalar_one_or_none()
     
-    if not routes:
+    if not terminal:
         raise HTTPException(status_code=404, detail="Terminal not found")
-
-    # Step 2: Collect bus IDs for these routes
-    route_ids = [r.id for r in routes]
-    bus_query = select(Bus).filter(Bus.route_id.in_(route_ids))
-    buses_result = await db.execute(bus_query)
-    buses = buses_result.scalars().all()
-
-    if not buses:
-        return {"message": "No bus available on this route"}
-
-    # Step 3: Check active tracking data (within last 10 mins)
-    time_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
-    active_query = (
-        select(Tracking)
-        .filter(Tracking.bus_id.in_([b.id for b in buses]))
-        .filter(Tracking.gps_timestamp >= time_ago)
-        .order_by(Tracking.gps_timestamp.desc())
+    
+    # Count buses at terminal
+    bus_query = select(func.count(Bus.id)).where(
+        Bus.current_terminal_id == terminal.id,
+        Bus.is_active == True
     )
-    tracking_result = await db.execute(active_query)
-    active_tracks = tracking_result.scalars().all()
-
-    if not active_tracks:
-        return {"message": "No bus available on this route"}
-
-    # Step 4: Calculate ETA for each bus (using your existing logic)
-    response_data = []
-    for track in active_tracks:
-        eta = await calculate_eta_minutes(track.latitude, track.longitude, terminal_name)
-        response_data.append({
-            "bus_id": track.bus_id,
-            "latitude": track.latitude,
-            "longitude": track.longitude,
-            "eta": eta,
-            "timestamp": track.gps_timestamp.isoformat()
-        })
-
-    return response_data
+    count_result = await db.execute(bus_query)
+    bus_count = count_result.scalar()
+    
+    return {
+        "terminal_id": terminal.id,
+        "terminal_name": terminal.name,
+        "bus_count": bus_count,
+        "capacity": terminal.capacity,
+        "available_space": terminal.capacity - bus_count
+    }

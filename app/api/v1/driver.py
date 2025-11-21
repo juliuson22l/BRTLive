@@ -1,85 +1,145 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional
+from typing import List
 
-from app.dependencies import get_db, require_admin, get_current_active_user
-from app.schemas.driver import DriverCreate, DriverUpdate, DriverResponse
+from app.database import get_db
 from app.models.driver import Driver
 from app.models.bus import Bus
+from app.schemas.driver import DriverCreate, DriverUpdate, DriverResponse, DriverWithBus
+from app.dependencies import get_current_admin_user, get_current_active_user, get_pagination_params
 from app.models.user import User
 
 router = APIRouter()
 
 @router.get("/", response_model=List[DriverResponse])
-async def get_drivers(
-    skip: int = 0,
-    limit: int = 100,
-    is_available: Optional[bool] = None,
+async def get_all_drivers(
+    pagination: dict = Depends(get_pagination_params),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get all drivers"""
-    query = select(Driver)
-    if is_available is not None:
-        query = query.filter(Driver.is_available == is_available)
-    query = query.offset(skip).limit(limit)
+    """Get all drivers with pagination"""
+    query = select(Driver).offset(pagination["skip"]).limit(pagination["limit"])
     result = await db.execute(query)
-    return result.scalars().all()
+    drivers = result.scalars().all()
+    return drivers
 
-@router.get("/{driver_id}", response_model=DriverResponse)
-async def get_driver(
-    driver_id: int,
+@router.get("/{driver_id}", response_model=DriverWithBus)
+async def get_driver_by_id(
+    driver_id: str,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Get single driver"""
-    result = await db.execute(select(Driver).filter(Driver.id == driver_id))
+    """Get a specific driver by ID with bus info"""
+    query = select(Driver).where(Driver.id == driver_id)
+    result = await db.execute(query)
     driver = result.scalar_one_or_none()
+    
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
-    return driver
+    
+    # Get assigned bus
+    bus_query = select(Bus).where(Bus.driver_id == driver_id)
+    bus_result = await db.execute(bus_query)
+    bus = bus_result.scalar_one_or_none()
+    
+    driver_dict = {
+        "id": driver.id,
+        "name": driver.name,
+        "phone_number": driver.phone_number,
+        "is_active": driver.is_active,
+        "created_at": driver.created_at,
+        "bus_id": bus.id if bus else None,
+        "bus_plate_number": bus.plate_number if bus else None
+    }
+    
+    return DriverWithBus(**driver_dict)
 
 @router.post("/", response_model=DriverResponse, status_code=status.HTTP_201_CREATED)
 async def create_driver(
     driver_data: DriverCreate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Create new driver"""
-    
-    # Check license exists
-    result = await db.execute(
-        select(Driver).filter(Driver.license_id == driver_data.license_number)
-    )
+    """Create a new driver (Admin only)"""
+    # Check if phone number already exists
+    query = select(Driver).where(Driver.phone_number == driver_data.phone_number)
+    result = await db.execute(query)
     if result.scalar_one_or_none():
-        raise HTTPException(status_code=400, detail="License number already exists")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Driver with this phone number already exists"
+        )
     
-    # Create driver
-    new_driver = Driver(**driver_data.model_dump())
-    db.add(new_driver)
+    # Check if license number already exists (if provided)
+    if driver_data.license_number:
+        license_query = select(Driver).where(Driver.license_number == driver_data.license_number)
+        license_result = await db.execute(license_query)
+        if license_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Driver with this license number already exists"
+            )
+    
+    driver = Driver(
+        user_id=driver_data.user_id,
+        name=driver_data.name,
+        phone_number=driver_data.phone_number,
+        license_number=driver_data.license_number
+    )
+    
+    db.add(driver)
     await db.commit()
-    await db.refresh(new_driver)
+    await db.refresh(driver)
     
-    return new_driver
+    return driver
 
 @router.put("/{driver_id}", response_model=DriverResponse)
 async def update_driver(
-    driver_id: int,
+    driver_id: str,
     driver_data: DriverUpdate,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Update driver"""
-    result = await db.execute(select(Driver).filter(Driver.id == driver_id))
+    """Update a driver (Admin only)"""
+    query = select(Driver).where(Driver.id == driver_id)
+    result = await db.execute(query)
     driver = result.scalar_one_or_none()
     
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
     
-    # Update fields
-    for field, value in driver_data.model_dump(exclude_unset=True).items():
-        setattr(driver, field, value)
+    # Update only provided fields
+    if driver_data.name is not None:
+        setattr(driver, "name", driver_data.name)
+    if driver_data.phone_number is not None:
+        # Check if new phone number is unique
+        check_query = select(Driver).where(
+            Driver.phone_number == driver_data.phone_number,
+            Driver.id != driver_id
+        )
+        check_result = await db.execute(check_query)
+        if check_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phone number already in use"
+            )
+        setattr(driver, "phone_number", driver_data.phone_number)
+    if driver_data.license_number is not None:
+        # Check if new license number is unique
+        check_query = select(Driver).where(
+            Driver.license_number == driver_data.license_number,
+            Driver.id != driver_id
+        )
+        check_result = await db.execute(check_query)
+        if check_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="License number already in use"
+            )
+        setattr(driver, "license_number", driver_data.license_number)
+    if driver_data.is_active is not None:
+        setattr(driver, "is_active", driver_data.is_active)
     
     await db.commit()
     await db.refresh(driver)
@@ -88,71 +148,28 @@ async def update_driver(
 
 @router.delete("/{driver_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_driver(
-    driver_id: int,
+    driver_id: str,
     db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
+    admin: User = Depends(get_current_admin_user)
 ):
-    """Delete driver"""
-    result = await db.execute(select(Driver).filter(Driver.id == driver_id))
+    """Delete a driver (Admin only)"""
+    query = select(Driver).where(Driver.id == driver_id)
+    result = await db.execute(query)
     driver = result.scalar_one_or_none()
     
     if not driver:
         raise HTTPException(status_code=404, detail="Driver not found")
+    
+    # Check if driver is assigned to a bus
+    bus_query = select(Bus).where(Bus.driver_id == driver_id)
+    bus_result = await db.execute(bus_query)
+    if bus_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete driver assigned to a bus. Unassign first."
+        )
     
     await db.delete(driver)
     await db.commit()
-
-@router.patch("/{driver_id}/assign-bus/{bus_id}")
-async def assign_bus(
-    driver_id: int,
-    bus_id: int,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
-):
-    """Assign bus to driver"""
     
-    # Get driver
-    result = await db.execute(select(Driver).filter(Driver.id == driver_id))
-    driver = result.scalar_one_or_none()
-    if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found")
-    
-    # Get bus
-    result = await db.execute(select(Bus).filter(Bus.id == bus_id))
-    bus = result.scalar_one_or_none()
-    if not bus:
-        raise HTTPException(status_code=404, detail="Bus not found")
-    
-    # Assign
-    if driver.current_bus_id is not None:
-        raise HTTPException(status_code=400, detail="Driver already has a bus assigned")
-    
-    if not driver.is_available:
-        raise HTTPException(status_code=400, detail="Driver is not available")
-
-    driver.current_bus_id == bus_id
-    driver.is_available = False
-    await db.commit()
-    
-    return {"message": "Bus assigned successfully"}
-
-@router.patch("/{driver_id}/unassign-bus")
-async def unassign_bus(
-    driver_id: int,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin)
-):
-    """Remove bus from driver"""
-    result = await db.execute(select(Driver).filter(Driver.id == driver_id))
-    driver = result.scalar_one_or_none()
-    
-    if not driver:
-        raise HTTPException(status_code=404, detail="Driver not found")
-
-    if driver.current_bus_id is None:
-        raise HTTPException(status_code=400, detail="Driver has no bus assigned")
-    
-    driver.is_available = True
-    await db.commit()
-    
-    return {"message": "Bus unassigned successfully"}
+    return None

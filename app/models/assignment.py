@@ -1,30 +1,36 @@
-from app.database import Base
-from enum import Enum
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime, Date
+from sqlalchemy import Column, String, DateTime, ForeignKey, Date, Enum, Integer, UniqueConstraint
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from datetime import datetime, timezone, date
-from sqlalchemy.dialects.postgresql import ENUM
 import uuid
+import enum
 
+from app.database import Base
 
-class ShiftType(Enum):
+class ShiftType(str, enum.Enum):
     MORNING = "morning"
     AFTERNOON = "afternoon"
     EVENING = "evening"
 
 class DailyAssignment(Base):
-    __tablename__ = "assignments"
-
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    bus_id = Column(Integer, ForeignKey("buses.id"), nullable=False)
-    driver_id = Column(Integer, ForeignKey("drivers.id"), nullable=False)
-    shift = Column(ENUM(ShiftType), nullable= False)
-    start_time = Column(DateTime, nullable=False)
-    end_time: Mapped[datetime | None] = mapped_column(nullable=True)    
-    is_active = Column(Boolean, default= True)
-    assignment_date = Column(Date, nullable=False, index=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-
-    driver = relationship("Driver",foreign_keys=[driver_id], back_populates="assignment")
-    bus = relationship("Bus",foreign_keys=[bus_id], backref="assignment")
+    __tablename__ = "daily_assignments"
     
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    driver_id = Column(String, ForeignKey("drivers.id"), unique=True, nullable=False)
+    bus_id = Column(Integer, ForeignKey("buses.id"), unique=True, nullable=False)
+    assignment_date = Column(Date, nullable=False, index=True)
+    shift = Column(Enum(ShiftType), nullable=False)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        UniqueConstraint(
+            'driver_id', 
+            'assignment_date', 
+            'shift',
+            name='uq_driver_date_shift'
+        ),
+    )
+
+    driver = relationship("Driver", back_populates="assignments")
+    bus = relationship("Bus", back_populates="assignments")

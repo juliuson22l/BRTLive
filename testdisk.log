@@ -1,0 +1,133 @@
+
+
+Wed Nov  5 18:53:12 2025
+Command line: TestDisk
+
+TestDisk 7.1, Data Recovery Utility, July 2019
+Christophe GRENIER <grenier@cgsecurity.org>
+https://www.cgsecurity.org
+OS: Linux, kernel 6.8.0-51-generic (#52-Ubuntu SMP PREEMPT_DYNAMIC Thu Dec  5 13:09:44 UTC 2024) x86_64
+Compiler: GCC 13.2
+ext2fs lib: 1.47.0, ntfs lib: libntfs-3g, reiserfs lib: none, ewf lib: none, curses lib: ncurses 6.4
+Warning: can't get size for Disk /dev/mapper/control - 0 B - 0 sectors, sector size=512
+Warning: can't get size for Disk /dev/loop3 - 0 B - 0 sectors (RO), sector size=512
+Hard disk list
+Disk /dev/loop0 - 4096 B - 8 sectors (RO), sector size=512
+Disk /dev/loop1 - 109 MB / 104 MiB - 213392 sectors (RO), sector size=512
+Disk /dev/loop10 - 20 KB / 20 KiB - 40 sectors (RO), sector size=512
+Disk /dev/loop11 - 96 MB / 91 MiB - 187776 sectors (RO), sector size=512
+Disk /dev/loop12 - 541 MB / 516 MiB - 1057184 sectors (RO), sector size=512
+Disk /dev/loop13 - 246 MB / 235 MiB - 481824 sectors (RO), sector size=512
+Disk /dev/loop14 - 105 MB / 100 MiB - 206088 sectors (RO), sector size=512
+Disk /dev/loop15 - 105 MB / 100 MiB - 206160 sectors (RO), sector size=512
+Disk /dev/loop16 - 183 MB / 174 MiB - 357560 sectors (RO), sector size=512
+Disk /dev/loop17 - 182 MB / 174 MiB - 356832 sectors (RO), sector size=512
+Disk /dev/loop18 - 11 MB / 10 MiB - 22176 sectors (RO), sector size=512
+Disk /dev/loop19 - 18 MB / 17 MiB - 35936 sectors (RO), sector size=512
+Disk /dev/loop2 - 109 MB / 104 MiB - 213456 sectors (RO), sector size=512
+Disk /dev/loop20 - 53 MB / 50 MiB - 103976 sectors (RO), sector size=512
+Disk /dev/loop21 - 53 MB / 50 MiB - 104296 sectors (RO), sector size=512
+Disk /dev/loop22 - 58 MB / 55 MiB - 113640 sectors (RO), sector size=512
+Disk /dev/loop4 - 58 MB / 55 MiB - 113640 sectors (RO), sector size=512
+Disk /dev/loop5 - 77 MB / 73 MiB - 151392 sectors (RO), sector size=512
+Disk /dev/loop6 - 77 MB / 73 MiB - 151368 sectors (RO), sector size=512
+Disk /dev/loop7 - 70 MB / 66 MiB - 136808 sectors (RO), sector size=512
+Disk /dev/loop8 - 70 MB / 66 MiB - 136896 sectors (RO), sector size=512
+Disk /dev/loop9 - 541 MB / 516 MiB - 1056784 sectors (RO), sector size=512
+Disk /dev/nvme0n1 - 256 GB / 238 GiB - CHS 244198 64 32, sector size=512
+
+Partition table type defaults to Intel
+Media is opened in read-only.
+Disk /dev/loop12 - 541 MB / 516 MiB (RO)
+Partition table type: Intel
+
+Analyse Disk /dev/loop12 - 541 MB / 516 MiB - 1057184 sectors (RO)
+Current partition structure:
+
+Partition sector doesn't have the endmark 0xAA55
+
+search_part()
+Disk /dev/loop12 - 541 MB / 516 MiB - 1057184 sectors (RO)
+
+Results
+
+interface_write()
+ 
+No partition found or selected for recovery
+simulate write!
+
+write_mbr_i386: starting...
+Store new MBR code
+write_all_log_i386: starting...
+No extended partition
+Partition table type defaults to Intel
+Media is opened in read-only.
+Disk /dev/loop9 - 541 MB / 516 MiB (RO)
+Partition table type: Intel
+
+Analyse Disk /dev/loop9 - 541 MB / 516 MiB - 1056784 sectors (RO)
+Current partition structure:
+
+Partition sector doesn't have the endmark 0xAA55
+
+search_part()
+Disk /dev/loop9 - 541 MB / 516 MiB - 1056784 sectors (RO)
+
+Results
+
+interface_write()
+ 
+No partition found or selected for recovery
+
+search_part()
+Disk /dev/loop9 - 541 MB / 516 MiB - 1056784 sectors (RO)
+
+Results
+
+interface_write()
+ 
+No partition found or selected for recovery
+simulate write!
+
+write_mbr_i386: starting...
+Store new MBR code
+write_all_log_i386: starting...
+No extended partition
+Partition table type defaults to Intel
+Media is opened in read-only.
+Disk /dev/loop0 - 4096 B (RO)
+Partition table type: Intel
+
+Analyse Disk /dev/loop0 - 4096 B - 8 sectors (RO)
+Current partition structure:
+
+Partition sector doesn't have the endmark 0xAA55
+
+search_part()
+Disk /dev/loop0 - 4096 B - 8 sectors (RO)
+
+Results
+Change partition type:
+     HPFS - NTFS                    8         20         13
+
+interface_write()
+ 1 * HPFS - NTFS                    8         20         13
+
+search_part()
+Disk /dev/loop0 - 4096 B - 8 sectors (RO)
+
+Results
+
+interface_write()
+ 
+No partition found or selected for recovery
+simulate write!
+
+write_mbr_i386: starting...
+Store new MBR code
+write_all_log_i386: starting...
+No extended partition
+
+Interface Advanced
+
+TestDisk exited normally.

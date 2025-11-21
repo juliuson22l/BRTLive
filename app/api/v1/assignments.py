@@ -5,20 +5,21 @@ from datetime import date
 
 from app.database import get_db
 from app.schemas.assignment import (
-    AssignmentCreate, AssignmentResponse, AssignmentEnd, DailyAssignmentSummary
+    AssignmentCreateWithPhone, AssignmentResponseWithDetails, AssignmentEnd, DailyAssignmentSummary,
+    AssignmentResponse
 )
 from app.services.assignment_service import AssignmentService
 
 router = APIRouter()
 
-@router.post("/", response_model=AssignmentResponse)
+@router.post("/", response_model=AssignmentResponseWithDetails)
 async def create_assignment(
-    assignment: AssignmentCreate,
+    assignment: AssignmentCreateWithPhone,
     db: AsyncSession = Depends(get_db)
 ):
     """Assign a driver to a bus for a specific shift"""
     service = AssignmentService(db)
-    return await service.create_assignment(assignment)
+    return await service.create_assignment_with_phone(assignment)
 
 @router.get("/daily/{assignment_date}", response_model=List[AssignmentResponse])
 async def get_daily_assignments(
@@ -29,14 +30,14 @@ async def get_daily_assignments(
     service = AssignmentService(db)
     return await service.get_assignments_by_date(assignment_date)
 
-@router.get("/driver/{driver_id}", response_model=List[AssignmentResponse])
-async def get_driver_assignments(
-    driver_id: str,
+@router.get("/driver/{phone_number}", response_model=List[AssignmentResponse])
+async def driver_assignments(
+    phone_number: str,
     db: AsyncSession = Depends(get_db)
 ):
     """Get assignment history for a specific driver"""
     service = AssignmentService(db)
-    return await service.get_driver_assignments(driver_id)
+    return await service.get_driver_assignments_by_phone(phone_number)
 
 @router.get("/summary/{assignment_date}", response_model=DailyAssignmentSummary)
 async def get_daily_summary(
@@ -56,6 +57,8 @@ async def end_assignment(
     """End a driver's shift"""
     service = AssignmentService(db)
     result = await service.end_assignment(assignment_id, data.end_time)
+
     if not result:
         raise HTTPException(status_code=404, detail="Assignment not found")
+    
     return result
