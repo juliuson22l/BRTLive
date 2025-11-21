@@ -68,3 +68,11 @@
 2025-11-21 21:05:58 - apscheduler.executors.default - INFO - Running job "Check for inactive buses (trigger: interval[0:05:00], next run at: 2025-11-21 21:10:58 WAT)" (scheduled at 2025-11-21 21:05:58.881093+01:00)
 2025-11-21 21:05:59 - apscheduler.executors.default - INFO - Job "Check for inactive buses (trigger: interval[0:05:00], next run at: 2025-11-21 21:10:58 WAT)" executed successfully
 2025-11-21 21:06:16 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Added job "Cleanup old location history" to job store "default"
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Added job "Check for inactive buses" to job store "default"
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Added job "Auto-end expired assignments" to job store "default"
+2025-11-21 23:11:31 - apscheduler.scheduler - INFO - Scheduler started
+2025-11-21 23:13:13 - apscheduler.scheduler - INFO - Scheduler has been shut down
