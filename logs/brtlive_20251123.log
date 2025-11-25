@@ -1,0 +1,8 @@
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Added job "Cleanup old location history" to job store "default"
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Added job "Check for inactive buses" to job store "default"
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Added job "Auto-end expired assignments" to job store "default"
+2025-11-23 01:52:56 - apscheduler.scheduler - INFO - Scheduler started
+2025-11-23 01:54:45 - apscheduler.scheduler - INFO - Scheduler has been shut down

@@ -6,7 +6,7 @@ load_dotenv()
 
 class Settings(BaseSettings):
     # App
-    APP_NAME: str = "BRT Live API"
+    APP_NAME: str = "BRTLive"
     DEBUG: bool = False
     VERSION: str = "1.0.0"
     
@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7 days
     
+    # CORS
+    BACKEND_CORS_ORIGINS: list[str] = ["*"]
+
     class Config:
         env_file = ".env"
         case_sensitive = True

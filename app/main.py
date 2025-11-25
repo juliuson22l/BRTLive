@@ -8,6 +8,7 @@ from app.database import init_db, close_db
 from app.core.Logging import setup_logging
 from app.background_tasks.scheduler import start_scheduler, shutdown_scheduler
 from app.api.v1.router import api_router
+from app.config import settings
 
 # Setup logging
 setup_logging(level="INFO")
@@ -30,8 +31,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 # Create app
 app = FastAPI(
-    title="BRT Live API",
-    version="1.0.0",
+    title=settings.APP_NAME,
+    version=settings.VERSION,
     description="Real-time bus tracking system",
     lifespan=lifespan
 )
@@ -39,7 +40,7 @@ app = FastAPI(
 # CORS (allow frontend to connect)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to ["http://localhost:3000"] in production
+    allow_origins=settings.BACKEND_CORS_ORIGINS,  # Change to ["http://localhost:3000"] in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
