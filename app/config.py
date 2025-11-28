@@ -36,6 +36,9 @@ class Settings(BaseSettings):
             return url.replace("postgres://", "postgresql://", 1)
         return url
     
+    # Redis
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+    
     # Security
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
     ALGORITHM: str = "HS256"
