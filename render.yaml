@@ -23,7 +23,7 @@ services:
       - key: DEBUG
         value: "False"
       - key: BACKEND_CORS_ORIGINS
-        value: "*"
+        value: '["*"]'
 
 databases:
   - name: brtlivedb

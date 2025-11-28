@@ -1,53 +1,32 @@
 from pydantic_settings import BaseSettings
+from typing import List, Optional
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 class Settings(BaseSettings):
-    # App
-    APP_NAME: str = "BRTLive"
-    DEBUG: bool = False
-    VERSION: str = "1.0.0"
+    # Database
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./brtlive.db")
     
-    # Access the credentials
-    DB_USER: str = str(os.getenv("POSTGRES_USER"))
-    DB_PASS: str = str(os.getenv("POSTGRES_PASSWORD"))
-    DB_HOST: str = str(os.getenv("POSTGRES_HOST"))
-    DB_PORT: int = 5432
-    DB_NAME: str = str(os.getenv("POSTGRES_DB"))
+    ASYNC_DATABASE_URL: str = os.getenv("ASYNC_DATABASE_URL", "postgresql+asyncpg:///./brtlive.db")
 
-
-    # Database (sync for Alembic migrations)
-    DATABASE_URL: str = (
-        f"postgresql+psycopg2://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
-    
-    # Async Database (for FastAPI endpoints)
-    ASYNC_DATABASE_URL: str = (
-        f"postgresql+asyncpg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    )
-
-    # Fix Heroku's postgres:// to postgresql://
-    @property
-    def db_url(self):
-        url = self.DATABASE_URL
-        if url and url.startswith("postgres://"):
-            return url.replace("postgres://", "postgresql://", 1)
-        return url
-    
-    # Redis
-    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-    
-    # Security
+    # JWT
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))  # 30 minutes
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7  # 7 days
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # CORS
-    BACKEND_CORS_ORIGINS: list[str] = ["*"]
-
+    # App
+    APP_NAME: str = "BRTLive"
+    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    
+    # CORS - accept as string
+    BACKEND_CORS_ORIGINS: str = os.getenv("BACKEND_CORS_ORIGINS", "*")
+    
+    @property
+    def cors_origins(self) -> List[str]:
+        """Convert CORS string to list"""
+        if self.BACKEND_CORS_ORIGINS == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",")]
+    
     class Config:
         env_file = ".env"
         case_sensitive = True
