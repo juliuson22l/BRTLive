@@ -120,7 +120,7 @@ class AsyncLogContext:
         return self
     
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        duration = asyncio.get_event_loop().time() - datetime.now(timezone.utc)
+        duration = asyncio.get_event_loop().time() - self.start_time
         
         if exc_type is None:
             self.logger.info(f"✅ Completed: {self.operation} ({duration:.2f}s)")
