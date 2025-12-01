@@ -18,8 +18,7 @@ class Settings(BaseSettings):
     DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
     
     # CORS - accept as string
-    BACKEND_CORS_ORIGINS: str = os.getenv("BACKEND_CORS_ORIGINS", "*")
-    
+    BACKEND_CORS_ORIGINS: str = "*"    
     @property
     def cors_origins(self) -> List[str]:
         """Convert CORS string to list"""
