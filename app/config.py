@@ -1,10 +1,10 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, ClassVar
 import os
 
 class Settings(BaseSettings):
     # Database
-    ASYNC_DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg:///./brtlive.db")
+    ASYNC_DATABASE_URL: ClassVar[str] = os.getenv("DATABASE_URL", "postgresql+asyncpg:///./brtlive.db")
     DATABASE_URL = ASYNC_DATABASE_URL
 
     # JWT
