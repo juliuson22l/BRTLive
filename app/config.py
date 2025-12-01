@@ -4,9 +4,8 @@ import os
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./brtlive.db")
-    
-    ASYNC_DATABASE_URL: str = os.getenv("ASYNC_DATABASE_URL", "postgresql+asyncpg:///./brtlive.db")
+    ASYNC_DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql+asyncpg:///./brtlive.db")
+    DATABASE_URL = ASYNC_DATABASE_URL
 
     # JWT
     SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
