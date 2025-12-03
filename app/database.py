@@ -4,7 +4,7 @@ from app.config import settings
 
 # Create async engine
 engine = create_async_engine(
-    settings.ASYNC_DATABASE_URL,
+    settings.db_url,
     echo=settings.DEBUG,
     future=True,
     pool_pre_ping=True,

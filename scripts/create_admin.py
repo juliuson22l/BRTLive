@@ -33,7 +33,7 @@ async def create_admin_user(
     """Create an admin user"""
     
     # Create async engine
-    engine = create_async_engine(settings.ASYNC_DATABASE_URL, echo=True)
+    engine = create_async_engine(settings.db_url, echo=True)
     AsyncSessionLocal = async_sessionmaker(
         engine, class_=AsyncSession, expire_on_commit=False
     )

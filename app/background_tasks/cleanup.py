@@ -21,7 +21,7 @@ async def cleanup_old_location_history(days_to_keep: int = 30):
     print(f"\n🧹 Starting location history cleanup (keeping last {days_to_keep} days)...")
     
     try:
-        engine = create_async_engine(settings.DATABASE_URL, echo=False)
+        engine = create_async_engine(settings.db_url, echo=False)
         AsyncSessionLocal = async_sessionmaker(
             engine, class_=AsyncSession, expire_on_commit=False
         )
