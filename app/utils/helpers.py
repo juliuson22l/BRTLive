@@ -44,13 +44,13 @@ def format_time_ago(dt:datetime) -> str:
         return "just now"
     elif seconds < 3600:
         minutes = int(seconds/60)
-        return f"{minutes} minute{"s" if minutes != 1 else ''} ago"
+        return f"{minutes} minute{"s" if minutes != 1 else ""} ago"
     elif seconds < 86400:
         hours = int(seconds / 3600)
-        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        return f"{hours} hour{'s' if hours != 1 else ""} ago"
     else:
         days = int(seconds / 86400)
-        return f"{days} day{'s' if days != 1 else ''}ago"
+        return f"{days} day{'s' if days != 1 else ""} ago"
     
 def format_duration(minutes: int) -> str:
     """
