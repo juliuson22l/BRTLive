@@ -4,8 +4,7 @@ import os
 
 class Settings(BaseSettings):
     # Database
-    ASYNC_DATABASE_URL: str = "postgresql://localhost/brtlive"
-    DATABASE_URL = ASYNC_DATABASE_URL
+    DATABASE_URL: ClassVar[str] = "postgresql://localhost/brtlive"
 
     # JWT
     SECRET_KEY: str = "your-secret-key-change-in-production"
