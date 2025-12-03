@@ -4,17 +4,17 @@ import os
 
 class Settings(BaseSettings):
     # Database
-    ASYNC_DATABASE_URL: str = "sqlite:///./test.db"
+    ASYNC_DATABASE_URL: str = "postgresql://localhost/brtlive"
     DATABASE_URL = ASYNC_DATABASE_URL
 
     # JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-key")
+    SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # App
     APP_NAME: str = "BRTLive"
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
+    DEBUG: bool = False
     
     # CORS - accept as string
     BACKEND_CORS_ORIGINS: str = "*"    
@@ -25,8 +25,18 @@ class Settings(BaseSettings):
             return ["*"]
         return [origin.strip() for origin in self.BACKEND_CORS_ORIGINS.split(",")]
     
+    @property
+    def db_url(self):
+        """Convert postgres:// to postgresql+asyncpg://"""
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
     class Config:
         env_file = ".env"
-        case_sensitive = True
+        case_sensitive = False
 
 settings = Settings()
